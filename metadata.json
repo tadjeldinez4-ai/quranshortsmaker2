@@ -1,0 +1,8 @@
+{
+  "name": "Quran Shorts Maker",
+  "description": "Create elegant vertical Quran videos with word-by-word karaoke highlighting, beautiful Uthmani script, and reciter audio.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
