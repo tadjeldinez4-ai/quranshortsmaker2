@@ -23,6 +23,7 @@ export interface ExportStyle {
   showSurahName: boolean;
   surahNameSize: number;
   surahName?: string;
+  startOffsetSec?: number;
 }
 
 export interface ExportInputs {
@@ -30,6 +31,7 @@ export interface ExportInputs {
   style: ExportStyle;
   backgroundKind: "gradient" | "video" | "image";
   backgroundValue: string; // CSS gradient | video URL | image URL
+  startOffsetSec?: number;
   onProgress: (p: number) => void; // 0..1
   signal?: AbortSignal;
 }
@@ -220,24 +222,39 @@ export async function exportVideo(input: ExportInputs): Promise<Blob> {
     }
   }
 
+  const startOffsetSec = input.startOffsetSec ?? input.style.startOffsetSec ?? 0;
+  const trimStartMs = Math.max(0, startOffsetSec * 1000);
+  const trimmedTotalMs = Math.max(100, totalDurationMs - trimStartMs);
+
   // ─── Schedule audio playback into destination ───
   const t0 = audioCtx.currentTime + 0.15;
   buffers.forEach((buf, i) => {
-    const src = audioCtx.createBufferSource();
-    src.buffer = buf;
-    src.connect(dest);
-    src.start(t0 + startTimes[i] / 1000);
+    const bufStartMs = startTimes[i];
+    const bufEndMs = bufStartMs + buf.duration * 1000;
+
+    if (bufEndMs > trimStartMs) {
+      const src = audioCtx.createBufferSource();
+      src.buffer = buf;
+      src.connect(dest);
+
+      if (bufStartMs >= trimStartMs) {
+        const delaySec = (bufStartMs - trimStartMs) / 1000;
+        src.start(t0 + delaySec);
+      } else {
+        const offsetSec = (trimStartMs - bufStartMs) / 1000;
+        const durationSec = buf.duration - offsetSec;
+        src.start(t0, offsetSec, offsetSec < buf.duration ? durationSec : 0);
+      }
+    }
   });
 
   // Prime the canvas so the very first captured frame isn't blank.
-  const totalMs = totalDurationMs;
   const frameDurMs = 1000 / FPS;
-  drawFrame(0);
+  drawFrame(trimStartMs);
   videoTrack.requestFrame?.();
 
   // ─── Render loop: recorder starts exactly when audio starts, ends when
-  // audio ends. Otherwise the 150ms pre-roll and any tail become extra
-  // duration in the exported file, and words appear shifted vs. the preview.
+  // trimmed audio ends.
   await new Promise<void>((resolve, reject) => {
     let stopped = false;
     let started = false;
@@ -255,11 +272,12 @@ export async function exportVideo(input: ExportInputs): Promise<Blob> {
         return;
       }
       const elapsedMs = Math.max(0, (audioCtx.currentTime - t0) * 1000);
-      const t = Math.min(elapsedMs, totalMs);
-      drawFrame(t);
+      const t = Math.min(elapsedMs, trimmedTotalMs);
+      const globalMs = t + trimStartMs;
+      drawFrame(globalMs);
       videoTrack.requestFrame?.();
-      onProgress(Math.min(0.99, t / totalMs));
-      if (elapsedMs >= totalMs) {
+      onProgress(Math.min(0.99, t / trimmedTotalMs));
+      if (elapsedMs >= trimmedTotalMs) {
         stopped = true;
         // Stop immediately — no tail — so exported duration matches audio.
         recorder.stop();

@@ -104,6 +104,9 @@ function Studio() {
   const arabicFontFamily =
     arabicFont === "zain" ? '"Zain", "Amiri Quran", serif' : '"Amiri Quran", "Amiri", serif';
 
+  // ─── Video Trimming State (skip silence at start) ─────────────────────
+  const [startOffsetSec, setStartOffsetSec] = useState<number>(0);
+
   // ─── Export state ─────────────────────────────────────────────────────
   const [exporting, setExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
@@ -178,6 +181,10 @@ function Studio() {
       a.pause();
       setPlaying(false);
     } else {
+      if (activeIdx === 0 && a.currentTime < startOffsetSec) {
+        a.currentTime = startOffsetSec;
+        setCurrentMs(startOffsetSec * 1000);
+      }
       a.play()
         .then(() => setPlaying(true))
         .catch(() => {});
@@ -237,6 +244,7 @@ function Studio() {
       const bgVal = uploadedBg ?? background.value;
       const blob = await exportVideo({
         clips,
+        startOffsetSec,
         style: {
           fontSize,
           lineHeight,
@@ -259,6 +267,7 @@ function Studio() {
           showSurahName,
           surahNameSize,
           surahName: currentChapter?.name_arabic,
+          startOffsetSec,
         },
         backgroundKind: bgKind,
         backgroundValue: bgVal,
@@ -378,6 +387,8 @@ function Studio() {
           arabicFontFamily={arabicFontFamily}
           segmentOverrides={segmentOverrides}
           setSegmentOverrides={setSegmentOverrides}
+          startOffsetSec={startOffsetSec}
+          setStartOffsetSec={setStartOffsetSec}
           exporting={exporting}
           exportProgress={exportProgress}
           handleExport={handleExport}
@@ -1062,6 +1073,44 @@ function Studio() {
               value={brightness}
               onChange={setBrightness}
             />
+          </Section>
+
+          <Section title="Video Trim (Skip Initial Silence)">
+            <Slider
+              label="Skip start (sec)"
+              min={0}
+              max={15}
+              step={0.1}
+              value={startOffsetSec}
+              onChange={setStartOffsetSec}
+              unit="s"
+            />
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  if (activeIdx === 0 && currentMs > 0) {
+                    setStartOffsetSec(Number((currentMs / 1000).toFixed(1)));
+                  }
+                }}
+                className="rounded border border-border/60 bg-surface/40 px-2.5 py-1 text-[11px] text-muted-foreground hover:bg-secondary/50 transition-colors"
+              >
+                Set trim at current time ({(currentMs / 1000).toFixed(1)}s)
+              </button>
+              <button
+                type="button"
+                onClick={() => setStartOffsetSec(0)}
+                className="rounded border border-border/60 bg-surface/40 px-2 py-1 text-[11px] text-muted-foreground hover:bg-secondary/50 transition-colors"
+              >
+                Reset (0s)
+              </button>
+            </div>
+            {startOffsetSec > 0 && (
+              <p className="text-[11px] font-medium text-emerald-400">
+                ✓ Video export starts at {startOffsetSec.toFixed(1)}s (Trimmed length:{" "}
+                {formatMs(Math.max(0, totalDurationMs - startOffsetSec * 1000))})
+              </p>
+            )}
           </Section>
 
           <Section title="Word Sync (manual)">

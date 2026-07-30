@@ -125,7 +125,9 @@ interface MobileStudioProps {
   segmentOverrides: Record<string, Segment[]>;
   setSegmentOverrides: React.Dispatch<React.SetStateAction<Record<string, Segment[]>>>;
 
-  // Export
+  // Export & Trimming
+  startOffsetSec: number;
+  setStartOffsetSec: (v: number) => void;
   exporting: boolean;
   exportProgress: number;
   handleExport: () => void;
@@ -158,6 +160,8 @@ export function MobileStudio(props: MobileStudioProps) {
     totalDurationMs,
     elapsedMs,
     activeWordPos,
+    startOffsetSec,
+    setStartOffsetSec,
     audioRef,
     preset,
     applyPreset,
@@ -1375,6 +1379,53 @@ export function MobileStudio(props: MobileStudioProps) {
               </div>
             </section>
 
+            {/* Start Trim / Skip Silence Card */}
+            <section className="space-y-2">
+              <div className="bg-[#192029] border border-[#4d4637] rounded-xl p-4 space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="font-['Manrope'] text-xs font-bold uppercase tracking-widest text-[#d0c5b1]">
+                    Video Start Trim (Skip Silence)
+                  </span>
+                  <span className="text-xs font-bold text-[#ffe39c]">
+                    {startOffsetSec.toFixed(1)}s
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={15}
+                  step={0.1}
+                  value={startOffsetSec}
+                  onChange={(e) => setStartOffsetSec(Number(e.target.value))}
+                  className="w-full h-1 bg-[#2e353f] rounded-lg appearance-none cursor-pointer accent-[#eac65f]"
+                />
+                <div className="flex justify-between items-center text-[10px] text-[#d0c5b1]/80">
+                  <button
+                    onClick={() => {
+                      if (activeIdx === 0 && currentMs > 0) {
+                        setStartOffsetSec(Number((currentMs / 1000).toFixed(1)));
+                      }
+                    }}
+                    className="px-2.5 py-1 rounded-md bg-[#2e353f] text-[#ffe39c] font-bold hover:bg-[#3d4552] transition-colors"
+                  >
+                    Set trim at current time ({(currentMs / 1000).toFixed(1)}s)
+                  </button>
+                  <button
+                    onClick={() => setStartOffsetSec(0)}
+                    className="px-2 py-1 rounded-md bg-[#2e353f] text-[#d0c5b1] hover:bg-[#3d4552] transition-colors"
+                  >
+                    Reset (0s)
+                  </button>
+                </div>
+                {startOffsetSec > 0 && (
+                  <p className="text-[10px] text-[#4edea3]">
+                    ✓ Export will start at {startOffsetSec.toFixed(1)}s (trimmed length:{" "}
+                    {formatMs(Math.max(0, totalDurationMs - startOffsetSec * 1000))})
+                  </p>
+                )}
+              </div>
+            </section>
+
             {/* Sync Controls Section */}
             <section className="space-y-4 pb-8">
               <div className="flex justify-between items-center px-1">
@@ -1558,6 +1609,18 @@ export function MobileStudio(props: MobileStudioProps) {
                 <div className="flex items-center justify-between border-t border-[#4d4637]/30 pt-3">
                   <span className="text-[#d0c5b1]/70 font-['Manrope']">Format</span>
                   <span className="text-[#dce3f0]">1080x1920 (9:16)</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[#d0c5b1]/70 font-['Manrope']">Start Trim</span>
+                  <span className="text-[#ffe39c] font-bold">
+                    {startOffsetSec > 0 ? `Skip first ${startOffsetSec.toFixed(1)}s` : "0s (Full)"}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[#d0c5b1]/70 font-['Manrope']">Export Duration</span>
+                  <span className="text-[#4edea3] font-bold">
+                    {formatMs(Math.max(0, totalDurationMs - startOffsetSec * 1000))}
+                  </span>
                 </div>
               </div>
             </section>
