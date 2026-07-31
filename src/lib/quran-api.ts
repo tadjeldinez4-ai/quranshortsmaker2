@@ -93,8 +93,15 @@ function loadAudioDurationMs(url: string): Promise<number> {
     const a = new Audio();
     a.preload = "metadata";
     a.crossOrigin = "anonymous";
-    a.onloadedmetadata = () => resolve(Math.round((a.duration || 0) * 1000));
-    a.onerror = () => resolve(0);
+    const timer = setTimeout(() => resolve(0), 3000);
+    a.onloadedmetadata = () => {
+      clearTimeout(timer);
+      resolve(Math.round((a.duration || 0) * 1000));
+    };
+    a.onerror = () => {
+      clearTimeout(timer);
+      resolve(0);
+    };
     a.src = url;
   });
 }
@@ -165,15 +172,44 @@ export async function fetchVerseWithAudio(
     }));
   } else {
     if (!v?.audio) throw new Error(`No audio for ${verseKey}`);
-    const rawSegments: number[][] = v.audio.segments || [];
-    segments = rawSegments.map((seg) => ({
-      wordPosition: (seg[0] ?? 0) + 1,
-      startMs: seg[2] ?? 0,
-      endMs: seg[3] ?? 0,
-    }));
-    durationMs = segments.length ? segments[segments.length - 1].endMs : 0;
-    const u: string = v.audio.url;
-    audioUrl = u.startsWith("http") ? u : AUDIO_BASE + u;
+
+    const rawSegments: (number | string)[][] = v.audio.segments || [];
+    const parsedSegments: Segment[] = [];
+    for (const rawSeg of rawSegments) {
+      const startWordIdx = Number(rawSeg[0] ?? 0);
+      const endWordIdx = Number(rawSeg[1] ?? startWordIdx + 1);
+      const startMs = Number(rawSeg[2] ?? 0);
+      const endMs = Number(rawSeg[3] ?? 0);
+
+      const numWords = Math.max(1, endWordIdx - startWordIdx);
+      const durationPerWord = (endMs - startMs) / numWords;
+
+      for (let i = 0; i < numWords; i++) {
+        const wordIdx = startWordIdx + i;
+        const wordPosition = wordIdx + 1; // 1-indexed position
+        const wStart = Math.round(startMs + i * durationPerWord);
+        const wEnd = Math.round(startMs + (i + 1) * durationPerWord);
+        parsedSegments.push({
+          wordPosition,
+          startMs: wStart,
+          endMs: wEnd,
+        });
+      }
+    }
+    segments = parsedSegments;
+
+    const u: string = v.audio.url || "";
+    if (u.startsWith("//")) {
+      audioUrl = "https:" + u;
+    } else if (u.startsWith("http")) {
+      audioUrl = u;
+    } else {
+      audioUrl = AUDIO_BASE + u;
+    }
+
+    const segEnd = segments.length ? segments[segments.length - 1].endMs : 0;
+    const mediaDuration = await loadAudioDurationMs(audioUrl);
+    durationMs = Math.max(segEnd, mediaDuration);
   }
 
   const translation = cleanTr(v.translations?.[0]?.text);
