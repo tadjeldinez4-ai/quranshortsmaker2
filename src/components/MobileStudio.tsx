@@ -27,7 +27,6 @@ import type { Reciter } from "@/lib/reciters";
 import type { Background } from "@/lib/backgrounds";
 import type { Preset } from "@/lib/presets";
 import { RECITERS } from "@/lib/reciters";
-import { BACKGROUNDS } from "@/lib/backgrounds";
 import { PRESETS } from "@/lib/presets";
 import { PexelsBrowser } from "@/components/PexelsBrowser";
 import type { PexelsResult } from "@/lib/pexels.functions";
@@ -218,7 +217,6 @@ export function MobileStudio(props: MobileStudioProps) {
     handleExport,
   } = props;
 
-  const [bgCategory, setBgCategory] = useState("Mosque Night");
   const [openAccordion, setOpenAccordion] = useState<string | null>("typography");
   const [showDrawer, setShowDrawer] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -830,61 +828,6 @@ export function MobileStudio(props: MobileStudioProps) {
                 <span className="font-['Manrope'] text-[11px] font-bold text-[#d0c5b1] uppercase">
                   Background
                 </span>
-              </div>
-
-              {/* Category Filter Pills */}
-              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-                {["Mosque Night", "Ocean Waves", "Rain Window", "Stars", "Forest", "Clouds"].map(
-                  (cat) => (
-                    <button
-                      key={cat}
-                      onClick={() => setBgCategory(cat)}
-                      className={`flex-none px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
-                        bgCategory === cat
-                          ? "border border-[#eac65f] bg-[#eac65f]/10 text-[#ffe39c]"
-                          : "border border-[#4d4637]/30 text-[#d0c5b1] hover:bg-[#2e353f]/30"
-                      }`}
-                    >
-                      {cat}
-                    </button>
-                  ),
-                )}
-              </div>
-
-              {/* Video Grid */}
-              <div className="grid grid-cols-3 gap-2.5">
-                {BACKGROUNDS.map((bg) => {
-                  const isSelected = background.id === bg.id && !uploadedBg;
-                  return (
-                    <div
-                      key={bg.id}
-                      onClick={() => {
-                        setUploadedBg(null);
-                        setBackground(bg);
-                      }}
-                      className={`relative aspect-[9/16] rounded-xl overflow-hidden cursor-pointer group border transition-all ${
-                        isSelected
-                          ? "border-[#eac65f] ring-2 ring-[#eac65f]/40 scale-[1.02]"
-                          : "border-[#4d4637]/30 hover:border-[#ffe39c]/50"
-                      }`}
-                    >
-                      {bg.kind === "video" ? (
-                        <video
-                          src={bg.value}
-                          muted
-                          playsInline
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full" style={{ background: bg.value }} />
-                      )}
-                      <div className="absolute bottom-1.5 left-1.5 bg-black/70 backdrop-blur-sm px-1.5 py-0.5 rounded text-[10px] flex items-center gap-1 text-[#dce3f0]">
-                        <Play className="w-2.5 h-2.5 fill-current text-[#ffe39c]" />
-                        <span>12s</span>
-                      </div>
-                    </div>
-                  );
-                })}
               </div>
 
               {/* Pexels Integration */}

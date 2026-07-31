@@ -9,7 +9,7 @@ import {
   type VerseWithAudio,
 } from "@/lib/quran-api";
 import { RECITERS } from "@/lib/reciters";
-import { BACKGROUNDS, type Background } from "@/lib/backgrounds";
+import { DEFAULT_BACKGROUND, type Background } from "@/lib/backgrounds";
 import { PRESETS, type Preset } from "@/lib/presets";
 import { exportVideo, downloadBlob } from "@/lib/exporter";
 import { PexelsBrowser } from "@/components/PexelsBrowser";
@@ -89,7 +89,7 @@ function Studio() {
   const [brightness, setBrightness] = useState(1);
   const [shadow, setShadow] = useState(preset.shadow);
   const [stroke, setStroke] = useState(preset.strokeWidth);
-  const [background, setBackground] = useState<Background>(BACKGROUNDS[0]);
+  const [background, setBackground] = useState<Background>(DEFAULT_BACKGROUND);
   const [uploadedBg, setUploadedBg] = useState<string | null>(null);
   const [wordsPerChunk, setWordsPerChunk] = useState(5);
   const [showTranslation, setShowTranslation] = useState(true);
@@ -607,40 +607,6 @@ function Studio() {
 
           <Section title="Background">
             <p className="mb-1 text-[10px] uppercase tracking-wider text-muted-foreground">
-              Presets
-            </p>
-            <div className="grid grid-cols-3 gap-2">
-              {BACKGROUNDS.map((b) => (
-                <button
-                  key={b.id}
-                  onClick={() => {
-                    setBackground(b);
-                    setUploadedBg(null);
-                  }}
-                  className={`relative aspect-[9/16] overflow-hidden rounded-md border text-[10px] transition ${
-                    background.id === b.id && !uploadedBg
-                      ? "border-primary ring-2 ring-primary/30"
-                      : "border-border/60 hover:border-border"
-                  }`}
-                  style={b.kind === "gradient" ? { background: b.value } : { background: "#000" }}
-                  title={b.label}
-                >
-                  {b.kind === "video" && (
-                    <div className="absolute inset-0 grid place-items-center bg-black/40">
-                      <span className="text-foreground">▶</span>
-                    </div>
-                  )}
-                  <span
-                    className="absolute bottom-1 left-1 right-1 truncate rounded bg-black/40 px-1 text-foreground"
-                    dir="rtl"
-                  >
-                    {b.label}
-                  </span>
-                </button>
-              ))}
-            </div>
-
-            <p className="mb-1 mt-3 text-[10px] uppercase tracking-wider text-muted-foreground">
               Pexels
             </p>
             <PexelsBrowser
