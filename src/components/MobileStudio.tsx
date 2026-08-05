@@ -28,6 +28,7 @@ import type { Background } from "@/lib/backgrounds";
 import type { Preset } from "@/lib/presets";
 import { RECITERS } from "@/lib/reciters";
 import { PRESETS } from "@/lib/presets";
+import { SocialOverlay, type SocialPlatform } from "./SocialOverlay";
 import { PexelsBrowser } from "@/components/PexelsBrowser";
 import type { PexelsResult } from "@/lib/pexels.functions";
 import { stripArabicDiacritics } from "@/lib/arabic";
@@ -116,6 +117,10 @@ interface MobileStudioProps {
   setShowSurahName: (b: boolean) => void;
   surahNameSize: number;
   setSurahNameSize: (v: number) => void;
+  surahY: number;
+  setSurahY: (v: number) => void;
+  socialPlatform: SocialPlatform;
+  setSocialPlatform: (p: SocialPlatform) => void;
   arabicFont: "amiri" | "zain";
   setArabicFont: (f: "amiri" | "zain") => void;
   arabicFontFamily: string;
@@ -207,6 +212,10 @@ export function MobileStudio(props: MobileStudioProps) {
     setShowSurahName,
     surahNameSize,
     setSurahNameSize,
+    surahY,
+    setSurahY,
+    socialPlatform,
+    setSocialPlatform,
     arabicFont,
     setArabicFont,
     arabicFontFamily,
@@ -266,6 +275,31 @@ export function MobileStudio(props: MobileStudioProps) {
             ))}
           </div>
         )}
+
+        {/* Social UI Overlay Selector Pills */}
+        <div className="flex items-center justify-center gap-1 bg-[#151c25] border border-[#4d4637]/30 p-1 rounded-full text-[10px] mx-auto max-w-[320px] overflow-x-auto scrollbar-none">
+          {(
+            [
+              { id: "none", label: "Clean" },
+              { id: "tiktok", label: "TikTok" },
+              { id: "instagram", label: "Reels" },
+              { id: "youtube", label: "Shorts" },
+              { id: "facebook", label: "Facebook" },
+            ] as const
+          ).map((p) => (
+            <button
+              key={p.id}
+              onClick={() => setSocialPlatform(p.id)}
+              className={`px-2.5 py-0.5 rounded-full font-semibold transition-all whitespace-nowrap ${
+                socialPlatform === p.id
+                  ? "bg-[#eac65f] text-[#685200] shadow-xs"
+                  : "text-[#d0c5b1] hover:text-white"
+              }`}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
 
         <div className="relative mx-auto w-full max-w-[280px] aspect-[9/16] rounded-xl overflow-hidden border border-[#4d4637]/30 shadow-2xl bg-[#080f17]">
           {/* Background layer */}
@@ -405,19 +439,28 @@ export function MobileStudio(props: MobileStudioProps) {
             )}
           </div>
 
-          {/* Surah name at bottom */}
+          {/* Surah name */}
           {currentChapter && showSurahName && (
             <div
               dir="rtl"
-              className="absolute bottom-6 left-0 right-0 px-2 text-center"
+              className="absolute left-0 right-0 px-2 text-center flex items-center justify-center gap-2 -translate-y-1/2"
               style={{
-                fontFamily: '"Surah Name", "Amiri Quran", serif',
-                fontSize: `${Math.min(surahNameSize, 28)}px`,
+                top: `${surahY}%`,
                 color: textColor,
                 textShadow: `0 2px ${shadow}px rgba(0,0,0,0.85)`,
               }}
             >
-              {currentChapter.name_arabic}
+              <span
+                style={{
+                  fontFamily: '"Surah Name", "Amiri Quran", serif',
+                  fontSize: `${Math.min(surahNameSize, 28)}px`,
+                }}
+              >
+                {currentChapter.name_arabic}
+              </span>
+              <span style={{ fontSize: "15px", fontFamily: '"Amiri Quran", "Inter", sans-serif' }}>
+                {startVerse === endVerse ? startVerse : `${startVerse}-${endVerse}`}
+              </span>
             </div>
           )}
 
@@ -453,6 +496,13 @@ export function MobileStudio(props: MobileStudioProps) {
               </span>
             </div>
           )}
+
+          {/* Social UI Overlay */}
+          <SocialOverlay
+            platform={socialPlatform}
+            surahName={currentChapter?.name_simple}
+            verseRange={startVerse === endVerse ? `${startVerse}` : `${startVerse}-${endVerse}`}
+          />
         </div>
       </div>
     );
@@ -1120,7 +1170,7 @@ export function MobileStudio(props: MobileStudioProps) {
                   )}
                 </button>
                 {openAccordion === "surah" && (
-                  <div className="p-4 space-y-3 border-t border-[#4d4637]/20 bg-[#151c25]">
+                  <div className="p-4 space-y-4 border-t border-[#4d4637]/20 bg-[#151c25]">
                     <label className="flex items-center justify-between rounded-lg border border-[#4d4637]/30 bg-[#192029] px-3 py-2 text-xs">
                       <span className="text-[#d0c5b1]">Show surah name</span>
                       <input
@@ -1130,6 +1180,38 @@ export function MobileStudio(props: MobileStudioProps) {
                         className="h-4 w-4 accent-[#eac65f]"
                       />
                     </label>
+                    {showSurahName && (
+                      <>
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest">
+                            <span className="text-[#d0c5b1]">Surah name size</span>
+                            <span className="text-[#ffe39c]">{surahNameSize}px</span>
+                          </div>
+                          <input
+                            type="range"
+                            min={14}
+                            max={96}
+                            value={surahNameSize}
+                            onChange={(e) => setSurahNameSize(Number(e.target.value))}
+                            className="w-full h-1 bg-[#2e353f] rounded-lg appearance-none cursor-pointer gold-slider-thumb accent-[#eac65f]"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest">
+                            <span className="text-[#d0c5b1]">Vertical position (Y)</span>
+                            <span className="text-[#ffe39c]">{surahY}%</span>
+                          </div>
+                          <input
+                            type="range"
+                            min={5}
+                            max={98}
+                            value={surahY}
+                            onChange={(e) => setSurahY(Number(e.target.value))}
+                            className="w-full h-1 bg-[#2e353f] rounded-lg appearance-none cursor-pointer gold-slider-thumb accent-[#eac65f]"
+                          />
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
               </div>

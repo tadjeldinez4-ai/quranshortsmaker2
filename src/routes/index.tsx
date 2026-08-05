@@ -16,6 +16,7 @@ import { PexelsBrowser } from "@/components/PexelsBrowser";
 import type { PexelsResult } from "@/lib/pexels.functions";
 import { stripArabicDiacritics } from "@/lib/arabic";
 import { MobileStudio, type MobileTab } from "@/components/MobileStudio";
+import { SocialOverlay, type SocialPlatform } from "@/components/SocialOverlay";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 export const Route = createFileRoute("/")({
@@ -100,6 +101,8 @@ function Studio() {
   const [wordSyncEnabled, setWordSyncEnabled] = useState(true);
   const [showSurahName, setShowSurahName] = useState(true);
   const [surahNameSize, setSurahNameSize] = useState(32);
+  const [surahY, setSurahY] = useState(92);
+  const [socialPlatform, setSocialPlatform] = useState<SocialPlatform>("none");
   const [arabicFont, setArabicFont] = useState<"amiri" | "zain">("amiri");
   const arabicFontFamily =
     arabicFont === "zain" ? '"Zain", "Amiri Quran", serif' : '"Amiri Quran", "Amiri", serif';
@@ -266,7 +269,9 @@ function Studio() {
           arabicFontFamily,
           showSurahName,
           surahNameSize,
+          surahY,
           surahName: currentChapter?.name_arabic,
+          verseRange: startVerse === endVerse ? `${startVerse}` : `${startVerse}-${endVerse}`,
           startOffsetSec,
         },
         backgroundKind: bgKind,
@@ -382,6 +387,10 @@ function Studio() {
           setShowSurahName={setShowSurahName}
           surahNameSize={surahNameSize}
           setSurahNameSize={setSurahNameSize}
+          surahY={surahY}
+          setSurahY={setSurahY}
+          socialPlatform={socialPlatform}
+          setSocialPlatform={setSocialPlatform}
           arabicFont={arabicFont}
           setArabicFont={setArabicFont}
           arabicFontFamily={arabicFontFamily}
@@ -645,8 +654,36 @@ function Studio() {
         </aside>
 
         {/* ── CENTER preview ── */}
-        <main className="flex min-h-0 flex-col items-center justify-center gap-4 bg-gradient-to-b from-background to-surface p-6">
-          <div className="relative aspect-[9/16] h-full max-h-[calc(100vh-220px)] overflow-hidden rounded-xl shadow-2xl shadow-black/50 ring-1 ring-border">
+        <main className="flex min-h-0 flex-col items-center justify-center gap-3 bg-gradient-to-b from-background to-surface p-6">
+          {/* Social Platform UI Overlay Selector */}
+          <div className="flex items-center gap-1 bg-surface/90 border border-border/80 p-1 rounded-lg text-xs shadow-sm">
+            <span className="text-[10px] font-semibold text-muted-foreground px-2 uppercase tracking-wider">
+              Preview UI:
+            </span>
+            {(
+              [
+                { id: "none", label: "Clean" },
+                { id: "tiktok", label: "TikTok" },
+                { id: "instagram", label: "IG Reels" },
+                { id: "youtube", label: "YT Shorts" },
+                { id: "facebook", label: "FB Reels" },
+              ] as const
+            ).map((p) => (
+              <button
+                key={p.id}
+                onClick={() => setSocialPlatform(p.id)}
+                className={`px-2.5 py-1 rounded-md text-xs font-medium transition ${
+                  socialPlatform === p.id
+                    ? "bg-primary text-primary-foreground shadow-xs font-semibold"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/60"
+                }`}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="relative aspect-[9/16] h-full max-h-[calc(100vh-260px)] overflow-hidden rounded-xl shadow-2xl shadow-black/50 ring-1 ring-border">
             {/* Background layer */}
             <div
               className="absolute inset-0"
@@ -805,17 +842,35 @@ function Studio() {
             {currentChapter && showSurahName && (
               <div
                 dir="rtl"
-                className="absolute bottom-8 left-0 right-0 px-4 text-center"
+                className="absolute left-0 right-0 px-4 text-center flex items-center justify-center gap-2 -translate-y-1/2"
                 style={{
-                  fontFamily: '"Surah Name", "Amiri Quran", serif',
-                  fontSize: `${surahNameSize}px`,
+                  top: `${surahY}%`,
                   color: textColor,
                   textShadow: `0 2px ${shadow}px rgba(0,0,0,0.85)`,
                 }}
               >
-                {currentChapter.name_arabic}
+                <span
+                  style={{
+                    fontFamily: '"Surah Name", "Amiri Quran", serif',
+                    fontSize: `${surahNameSize}px`,
+                  }}
+                >
+                  {currentChapter.name_arabic}
+                </span>
+                <span
+                  style={{ fontSize: "15px", fontFamily: '"Amiri Quran", "Inter", sans-serif' }}
+                >
+                  {startVerse === endVerse ? startVerse : `${startVerse}-${endVerse}`}
+                </span>
               </div>
             )}
+
+            {/* Social UI Overlay */}
+            <SocialOverlay
+              platform={socialPlatform}
+              surahName={currentChapter?.name_simple}
+              verseRange={startVerse === endVerse ? `${startVerse}` : `${startVerse}-${endVerse}`}
+            />
           </div>
 
           {/* Transport */}
@@ -1005,14 +1060,24 @@ function Studio() {
               />
             </label>
             {showSurahName && (
-              <Slider
-                label="Surah name size"
-                min={14}
-                max={96}
-                value={surahNameSize}
-                onChange={setSurahNameSize}
-                unit="px"
-              />
+              <>
+                <Slider
+                  label="Surah name size"
+                  min={14}
+                  max={96}
+                  value={surahNameSize}
+                  onChange={setSurahNameSize}
+                  unit="px"
+                />
+                <Slider
+                  label="Vertical position (Y)"
+                  min={5}
+                  max={98}
+                  value={surahY}
+                  onChange={setSurahY}
+                  unit="%"
+                />
+              </>
             )}
           </Section>
 

@@ -22,7 +22,9 @@ export interface ExportStyle {
   arabicFontFamily?: string;
   showSurahName: boolean;
   surahNameSize: number;
+  surahY?: number;
   surahName?: string;
+  verseRange?: string;
   startOffsetSec?: number;
 }
 
@@ -463,19 +465,46 @@ export async function exportVideo(input: ExportInputs): Promise<Blob> {
       ctx.restore();
     }
 
-    // Draw Surah name at the bottom
-    if (style.showSurahName && style.surahName) {
+    // Draw Surah name
+    if (style.showSurahName && (style.surahName || style.verseRange)) {
+      const surahY = style.surahY !== undefined ? style.surahY : 92;
+      const surahCy = (surahY / 100) * H;
       const surahPx = style.surahNameSize * 3 * scale;
+      const rangePx = 15 * 3 * scale;
       ctx.save();
-      ctx.font = `${surahPx}px "Surah Name", "Amiri Quran", serif`;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "alphabetic";
       ctx.globalAlpha = 0.95;
       ctx.shadowColor = "rgba(0,0,0,0.9)";
       ctx.shadowBlur = Math.max(12, style.shadow * 2);
       ctx.shadowOffsetY = 4;
       ctx.fillStyle = style.textColor;
-      ctx.fillText(style.surahName, W / 2, H - 80);
+
+      const surahText = style.surahName || "";
+      const rangeText = style.verseRange || "";
+
+      if (surahText && rangeText) {
+        ctx.font = `${surahPx}px "Surah Name", "Amiri Quran", serif`;
+        const surahW = ctx.measureText(surahText).width;
+        ctx.font = `${rangePx}px "Amiri Quran", "Inter", sans-serif`;
+        const rangeW = ctx.measureText(rangeText).width;
+        const spacing = 12 * scale;
+        const totalWidth = surahW + spacing + rangeW;
+
+        const startX = (W - totalWidth) / 2;
+        ctx.textAlign = "left";
+        ctx.textBaseline = "middle";
+
+        // Surah Name on right, Verse Range on left
+        ctx.font = `${surahPx}px "Surah Name", "Amiri Quran", serif`;
+        ctx.fillText(surahText, startX + rangeW + spacing, surahCy);
+
+        ctx.font = `${rangePx}px "Amiri Quran", "Inter", sans-serif`;
+        ctx.fillText(rangeText, startX, surahCy);
+      } else {
+        ctx.font = `${surahPx}px "Surah Name", "Amiri Quran", serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(surahText || rangeText, W / 2, surahCy);
+      }
       ctx.restore();
     }
   }

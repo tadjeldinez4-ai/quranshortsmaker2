@@ -135,8 +135,9 @@ function RootShell({ children }: { children: ReactNode }) {
     <html lang="en" suppressHydrationWarning>
       <head suppressHydrationWarning>
         <script
+          suppressHydrationWarning
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var d=Object.getOwnPropertyDescriptor(window,'fetch')||Object.getOwnPropertyDescriptor(Object.getPrototypeOf(window),'fetch');if(d&&d.get&&!d.set){var f=window.fetch;Object.defineProperty(window,'fetch',{value:function(){return f.apply(this,arguments);},writable:true,configurable:true,enumerable:true});}}catch(e){}})();`,
+            __html: `(function(){try{var proto=Object.getPrototypeOf(window);var d=Object.getOwnPropertyDescriptor(window,'fetch')||(proto&&Object.getOwnPropertyDescriptor(proto,'fetch'));if(d&&d.get&&!d.set){var currentFetch=window.fetch;Object.defineProperty(proto||window,'fetch',{get:function(){return currentFetch;},set:function(v){currentFetch=v;},configurable:true,enumerable:true});}}catch(e){}})();`,
           }}
         />
         <HeadContent />

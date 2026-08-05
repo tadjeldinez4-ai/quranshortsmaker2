@@ -40,6 +40,8 @@ export function PexelsBrowser({
     staleTime: 5 * 60 * 1000,
   });
 
+  const results = q.data?.results;
+
   return (
     <div className="flex flex-col gap-2">
       <form
@@ -111,12 +113,12 @@ export function PexelsBrowser({
             {(q.error as Error)?.message ?? "Search failed"}
           </p>
         )}
-        {q.data && q.data.results.length === 0 && (
+        {results && results.length === 0 && (
           <p className="p-2 text-[11px] text-muted-foreground">No results.</p>
         )}
-        {q.data && q.data.results.length > 0 && (
+        {results && results.length > 0 && (
           <div className="grid grid-cols-3 gap-1.5">
-            {q.data.results.map((r) => (
+            {results.map((r) => (
               <button
                 key={`${r.kind}-${r.id}`}
                 onClick={() => onPick(r)}
@@ -149,7 +151,7 @@ export function PexelsBrowser({
 
       {q.data && (
         <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-          <span>Page {q.data.page} · via Pexels</span>
+          <span>Page {q.data.page ?? 1} · via Pexels</span>
           <div className="flex gap-1">
             <button
               disabled={page <= 1}
